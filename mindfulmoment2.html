@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindful Moments | Mental Health Support</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .mood-cursor {
+            transition: all 0.3s ease;
+        }
+        .mood-cursor:hover {
+            transform: scale(1.1);
+        }
+        .chat-message {
+            max-width: 80%;
+        }
+        .entry-textarea {
+            min-height: 150px;
+        }
+        .mood-chart {
+            height: 300px;
+        }
+        #moodChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @media (max-width: 640px) {
+            .chat-message {
+                max-width: 90%;
+            }
+            .entry-textarea {
+                min-height: 100px;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+                <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mr-3">
+                    <i class="fas fa-brain text-indigo-600 dark:text-indigo-300 text-xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Mindful Moments</h1>
+            </div>
+            <button id="theme-toggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                <i class="fas fa-moon dark:fa-sun"></i>
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Journal Section -->
+            <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Daily Journal</h2>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="entry-date">Date</label>
+                    <input type="date" id="entry-date" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">How are you feeling today?</label>
+                    <div class="flex justify-between mb-4">
+                        <div class="text-center cursor-pointer mood-cursor" data-mood="1">
+                            <div class="w-10 h-10 mx-auto rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-2xl">😢</div>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">Very Sad</span>
+                        </div>
+                        <div class="text-center cursor-pointer mood-cursor" data-mood="2">
+                            <div class="w-10 h-10 mx-auto rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center text-2xl">😞</div>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">Sad</span>
+                        </div>
+                        <div class="text-center cursor-pointer mood-cursor" data-mood="3">
+                            <div class="w-10 h-10 mx-auto rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center text-2xl">😐</div>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">Neutral</span>
+                        </div>
+                        <div class="text-center cursor-pointer mood-cursor" data-mood="4">
+                            <div class="w-10 h-10 mx-auto rounded-full bg-yellow-100 dark:bg-yellow-800 flex items-center justify-center text-2xl">🙂</div>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">Happy</span>
+                        </div>
+                        <div class="text-center cursor-pointer mood-cursor" data-mood="5">
+                            <div class="w-10 h-10 mx-auto rounded-full bg-yellow-100 dark:bg-yellow-700 flex items-center justify-center text-2xl">😊</div>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">Very Happy</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="selected-mood" value="3">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="journal-entry">Journal Entry</label>
+                    <textarea id="journal-entry" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-white entry-textarea" placeholder="Write your thoughts here..."></textarea>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button id="save-entry" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">Save Entry</button>
+                    <button id="analyze-entry" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Analyze Mood</button>
+                </div>
+            </div>
+            
+            <!-- Mood Tracker -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Mood Tracker</h2>
+                <div class="mood-chart mb-6">
+                    <canvas id="moodChart"></canvas>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Overall Mood Trend</h3>
+                    <p id="mood-summary" class="text-sm text-gray-600 dark:text-gray-400 mt-1">Your mood has been stable recently</p>
+                </div>
+            </div>
+            
+            <!-- Chatbot Support -->
+            <div class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Support Companion</h2>
+                
+                <div id="chat-container" class="mb-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg h-64 overflow-y-auto">
+                    <div class="chat-message bg-indigo-100 dark:bg-indigo-800 text-gray-800 dark:text-white rounded-lg p-3 mb-2 self-start fade-in">
+                        <p>Hello! I'm here to support you. How can I help today?</p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Type your message..." class="flex-grow p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                    <button id="send-message" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">Send</button>
+                    <button id="quick-help" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Quick Help</button>
+                </div>
+                
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button class="quick-action px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md text-sm hover:bg-blue-200 dark:hover:bg-blue-800 transition">I'm feeling anxious</button>
+                    <button class="quick-action px-3 py-2 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-md text-sm hover:bg-purple-200 dark:hover:bg-purple-800 transition">Need motivation</button>
+                    <button class="quick-action px-3 py-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-md text-sm hover:bg-green-200 dark:hover:bg-green-800 transition">Stress relief</button>
+                    <button class="quick-action px-3 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-md text-sm hover:bg-yellow-200 dark:hover:bg-yellow-800 transition">Feeling lonely</button>
+                </div>
+            </div>
+            
+            <!-- Past Entries Section -->
+            <div class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Your Journal Entries</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Mood</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Entry Preview</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Analysis</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entries-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                            <!-- Entries will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-entries" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p>No journal entries yet. Start by writing your first entry above.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme toggle
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            
+            themeToggle.addEventListener('click', function() {
+                document.documentElement.classList.toggle('dark');
+                if (document.documentElement.classList.contains('dark')) {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+            
+            // Check for saved theme preference
+            if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            }
+            
+            // Set today's date as default
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            document.getElementById('entry-date').value = dateStr;
+            
+            // Mood selection
+            const moodCursors = document.querySelectorAll('.mood-cursor');
+            const selectedMood = document.getElementById('selected-mood');
+            
+            moodCursors.forEach(cursor => {
+                cursor.addEventListener('click', function() {
+                    moodCursors.forEach(c => c.classList.remove('ring-2', 'ring-indigo-500'));
+                    this.classList.add('ring-2', 'ring-indigo-500');
+                    selectedMood.value = this.dataset.mood;
+                });
+            });
+            
+            // Initialize mood chart
+            const moodData = JSON.parse(localStorage.getItem('moodData')) || [];
+            const ctx = document.getElementById('moodChart').getContext('2d');
+            const moodChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: moodData.map(entry => new Date(entry.date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Mood',
+                        data: moodData.map(entry => entry.mood),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#6366f1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 1,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Save journal entry
+            document.getElementById('save-entry').addEventListener('click', saveEntry);
+            
+            function saveEntry() {
+                const date = document.getElementById('entry-date').value;
+                const mood = parseInt(selectedMood.value);
+                const text = document.getElementById('journal-entry').value;
+                
+                if (!date || !text) {
+                    alert('Please enter both a date and journal entry.');
+                    return;
+                }
+                
+                // Create entry object
+                const entry = {
+                    id: Date.now(),
+                    date: date,
+                    mood: mood,
+                    text: text,
+                    analysis: ''
+                };
+                
+                // Get existing entries or initialize empty array
+                let entries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+                
+                // Add new entry to beginning of array
+                entries.unshift(entry);
+                
+                // Save to localStorage
+                localStorage.setItem('journalEntries', JSON.stringify(entries));
+                
+                // Update mood data for chart
+                updateMoodData(date, mood);
+                
+                // Clear form
+                document.getElementById('journal-entry').value = '';
+                
+                // Refresh entries list
+                loadEntries();
+                
+                // Show success message in chat
+                addChatMessage("Journal entry saved successfully. Would you like to reflect on this entry?", "system");
+            }
+            
+            function updateMoodData(date, mood) {
+                let moodData = JSON.parse(localStorage.getItem('moodData')) || [];
+                
+                // Check if we already have an entry for this date
+                const existingIndex = moodData.findIndex(entry => entry.date === date);
+                
+                if (existingIndex >= 0) {
+                    // Update existing entry
+                    moodData[existingIndex].mood = mood;
+                } else {
+                    // Add new entry
+                    moodData.push({ date: date, mood: mood });
+                }
+                
+                // Sort by date
+                moodData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                // Save updated data
+                localStorage.setItem('moodData', JSON.stringify(moodData));
+                
+                // Update chart
+                updateChart();
+            }
+            
+            function updateChart() {
+                const moodData = JSON.parse(localStorage.getItem('moodData')) || [];
+                moodChart.data.labels = moodData.map(entry => new Date(entry.date).toLocaleDateString());
+                moodChart.data.datasets[0].data = moodData.map(entry => entry.mood);
+                moodChart.update();
+                
+                // Update mood summary
+                updateMoodSummary(moodData);
+            }
+            
+            function updateMoodSummary(moodData) {
+                const summaryElement = document.getElementById('mood-summary');
+                if (!moodData || moodData.length === 0) {
+                    summaryElement.textContent = "No mood data available yet";
+                    return;
+                }
+                
+                // Simple sentiment analysis
+                if (moodData.length >= 3) {
+                    const lastThree = moodData.slice(-3).map(entry => entry.mood);
+                    const avg = lastThree.reduce((a, b) => a + b, 0) / 3;
+                    
+                    if (avg < 2.5) {
+                        summaryElement.textContent = "Your mood has been low recently";
+                    } else if (avg > 3.5) {
+                        summaryElement.textContent = "Your mood has been positive recently";
+                    } else {
+                        summaryElement.textContent = "Your mood has been stable recently";
+                    }
+                } else {
+                    summaryElement.textContent = "Keep adding entries to see your mood trends";
+                }
+            }
+            
+            function loadEntries() {
+                const entriesBody = document.getElementById('entries-body');
+                const noEntries = document.getElementById('no-entries');
+                const entries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+                
+                entriesBody.innerHTML = '';
+                
+                if (entries.length === 0) {
+                    noEntries.style.display = 'block';
+                    return;
+                }
+                
+                noEntries.style.display = 'none';
+                
+                entries.forEach(entry => {
+                    const row = document.createElement('tr');
+                    
+                    // Mood emoji
+                    let moodEmoji = '';
+                    if (entry.mood === 1) moodEmoji = '😢';
+                    else if (entry.mood === 2) moodEmoji = '😞';
+                    else if (entry.mood === 3) moodEmoji = '😐';
+                    else if (entry.mood === 4) moodEmoji = '🙂';
+                    else if (entry.mood === 5) moodEmoji = '😊';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200">${new Date(entry.date).toLocaleDateString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-2xl">${moodEmoji}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-200 max-w-xs truncate">${entry.text.substring(0, 50)}${entry.text.length > 50 ? '...' : ''}</td>
+                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-200 max-w-xs truncate">${entry.analysis || 'Not analyzed'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200">
+                            <button class="view-entry p-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300" data-id="${entry.id}">View</button>
+                            <button class="delete-entry p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" data-id="${entry.id}">Delete</button>
+                        </td>
+                    `;
+                    
+                    entriesBody.appendChild(row);
+                });
+                
+                // Add event listeners for action buttons
+                document.querySelectorAll('.view-entry').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const entryId = parseInt(this.dataset.id);
+                        viewEntry(entryId);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-entry').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const entryId = parseInt(this.dataset.id);
+                        deleteEntry(entryId);
+                    });
+                });
+            }
+            
+            function viewEntry(entryId) {
+                const entries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+                const entry = entries.find(e => e.id === entryId);
+                
+                if (!entry) {
+                    alert('Entry not found.');
+                    return;
+                }
+                
+                document.getElementById('entry-date').value = entry.date;
+                document.getElementById('selected-mood').value = entry.mood;
+                document.getElementById('journal-entry').value = entry.text;
+                
+                // Highlight the selected mood
+                moodCursors.forEach(cursor => {
+                    cursor.classList.remove('ring-2', 'ring-indigo-500');
+                    if (parseInt(cursor.dataset.mood) === entry.mood) {
+                        cursor.classList.add('ring-2', 'ring-indigo-500');
+                    }
+                });
+                
+                // Add analysis to chat if exists
+                if (entry.analysis) {
+                    addChatMessage(`Analysis of your entry from ${new Date(entry.date).toLocaleDateString()}: ${entry.analysis}`, "system");
+                }
+            }
+            
+            function deleteEntry(entryId) {
+                if (!confirm('Are you sure you want to delete this entry?')) {
+                    return;
+                }
+                
+                let entries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+                entries = entries.filter(entry => entry.id !== entryId);
+                localStorage.setItem('journalEntries', JSON.stringify(entries));
+                
+                // Update mood data (remove if this was the only entry for that date)
+                updateMoodDataAfterDeletion();
+                
+                loadEntries();
+                updateChart();
+            }
+            
+            function updateMoodDataAfterDeletion() {
+                const entries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+                const moodData = JSON.parse(localStorage.getItem('moodData')) || [];
+                
+                const datesWithEntries = new Set(entries.map(entry => entry.date));
+                
+                // Filter moodData to only include dates that still have entries
+                const newMoodData = moodData.filter(entry => 
+                    datesWithEntries.has(entry.date)
+                );
+                
+                localStorage.setItem('moodData', JSON.stringify(newMoodData));
+            }
+            
+            // Chat functionality
+            const chatInput = document.getElementById('chat-input');
+            const sendMessageBtn = document.getElementById('send-message');
+            const quickHelpBtn = document.getElementById('quick-help');
+            const quickActions = document.querySelectorAll('.quick-action');
+            
+            sendMessageBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            quickHelpBtn.addEventListener('click', function() {
+                addChatMessage("Here are some quick resources that might help: Take a deep breath, go for a short walk, or try journaling about what's bothering you.", "system");
+            });
+            
+            quickActions.forEach(action => {
+                action.addEventListener('click', function() {
+                    const msg = this.textContent;
+                    addChatMessage(msg, "user");
+                    setTimeout(() => {
+                        respondToQuickAction(msg);
+                    }, 1000);
+                });
+            });
+            
+            function sendMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
+                
+                addChatMessage(message, "user");
+                chatInput.value = '';
+                
+                setTimeout(() => {
+                    generateResponse(message);
+                }, 1000);
+            }
+            
+            function addChatMessage(message, sender) {
+                const chatContainer = document.getElementById('chat-container');
+                const messageElement = document.createElement('div');
+                
+                messageElement.classList.add('chat-message', 'fade-in');
+                if (sender === 'user') {
+                    messageElement.classList.add('bg-white', 'dark:bg-gray-600', 'text-gray-800', 'dark:text-white', 'self-end');
+                } else {
+                    messageElement.classList.add('bg-indigo-100', 'dark:bg-indigo-800', 'text-gray-800', 'dark:text-white', 'self-start');
+                }
+                
+                messageElement.innerHTML = `<p>${message}</p>`;
+                chatContainer.appendChild(messageElement);
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            function generateResponse(message) {
+                let response = "";
+                
+                // Simple response logic - in a real app, this would connect to an AI service
+                message = message.toLowerCase();
+                
+                if (message.includes('anxious') || message.includes('nervous') || message.includes('worried')) {
+                    response = "It's completely normal to feel anxious sometimes. Try focusing on your breathing - inhale for 4 seconds, hold for 4, exhale for 6. Would you like me to guide you through a short breathing exercise?";
+                } else if (message.includes('happy') || message.includes('good') || message.includes('great')) {
+                    response = "I'm glad to hear you're feeling good! Celebrating positive moments is important. Would you like to write about what's making you happy in your journal?";
+                } else if (message.includes('sad') || message.includes('depressed') || message.includes('bad')) {
+                    response = "I'm sorry you're feeling this way. Remember that feelings are temporary. Would it help to talk more about what's on your mind, or would you like some gentle suggestions?";
+                } else if (message.includes('help') || message.includes('support') || message.includes('advice')) {
+                    response = "There are several ways I can help: You can journal your thoughts, we can talk through what's bothering you, or I can suggest some coping strategies. What would you prefer?";
+                } else if (message.includes('stress') || message.includes('overwhelmed')) {
+                    response = "When feeling stressed, breaking things into smaller steps can help. Also, physical movement like stretching or walking can reduce stress hormones. Would you like a short stress-relief exercise?";
+                } else if (message.includes('thank') || message.includes('appreciate')) {
+                    response = "You're very welcome! I'm here to support you whenever you need. Is there anything else on your mind?";
+                } else {
+                    response = "I hear what you're saying. Reflecting on your feelings in your journal can often provide clarity. Would you like to explore this further?";
+                }
+                
+                addChatMessage(response, "system");
+            }
+            
+            function respondToQuickAction(actionText) {
+                let response = "";
+                
+                if (actionText.includes('anxious')) {
+                    response = "Anxiety can feel overwhelming. Try this: Find a quiet space, close your eyes, and breathe deeply while counting slowly to 10. Repeat until you feel more centered.";
+                } else if (actionText.includes('motivation')) {
+                    response = "Motivation comes and goes. Start small with one achievable task. Completing it can create momentum. You've got this!";
+                } else if (actionText.includes('stress relief')) {
+                    response = "For quick stress relief, try tensing and then relaxing each muscle group starting from your toes up to your face. This is called progressive muscle relaxation.";
+                } else if (actionText.includes('lonely')) {
+                    response = "Feeling lonely is challenging. Remember that many others feel this way too. Reaching out to someone, even just to say hello, can help.";
+                }
+                
+                addChatMessage(response, "system");
+            }
+            
+            // Analyze entry button
+            document.getElementById('analyze-entry').addEventListener('click', function() {
+                const text = document.getElementById('journal-entry').value;
+                if (!text) {
+                    alert('Please enter some text to analyze.');
+                    return;
+                }
+                
+                // Simple sentiment analysis
+                const mood = parseInt(selectedMood.value);
+                let analysis = "";
+                
+                if (mood < 3) {
+                    analysis = `Your entry reflects lower mood (${mood}/5). The content suggests you may be feeling challenged. Be kind to yourself during these moments.`;
+                } else if (mood === 3) {
+                    analysis = `Your mood appears neutral (3/5). Your entry shows balanced emotions. Keeping awareness of subtle feelings can be insightful.`;
+                } else {
+                    analysis = `Your entry reflects positive mood (${mood}/5). Celebrating good moments helps build resilience for tougher times.`;
+                }
+                
+                // Check for keywords
+                if (text.includes('!') || text.includes('happy') || text.includes('excited') || text.includes('great')) {
+                    analysis += " I notice positive language in your entry.";
+                }
+                
+                if (text.includes('sad') || text.includes('hurt') || text.includes('difficult') || text.includes('hard')) {
+                    analysis += " The presence of more challenging emotions suggests you may want to explore these feelings further.";
+                }
+                
+                // Save analysis to the latest entry
+                const entries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+                if (entries.length > 0) {
+                    entries[0].analysis = analysis;
+                    localStorage.setItem('journalEntries', JSON.stringify(entries));
+                }
+                
+                // Show in chat
+                addChatMessage("Entry analysis complete: " + analysis, "system");
+            });
+            
+            // Initial load
+            loadEntries();
+            updateChart();
+        });
+    </script>
+</body>
+</html>
